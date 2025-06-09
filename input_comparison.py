@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 st.set_page_config(page_title="Vessel MEShaftPowerActual vs SpeedOG Analysis", layout="wide")
 
 # Title
-st.title("🚢 Vessel MEShaftPowerActual vs SpeedOG Analysis")
+st.title("🚢 MEShaftPowerActual vs SpeedOG Analysis")
 
 # Vessel ID to Name mapping
 vessel_names = {
@@ -227,7 +227,7 @@ if selected_vessel_ids:
             ))
 
     fig.update_layout(
-        title="MEShaftPowerActual vs SpeedOG",
+        # title="MEShaftPowerActual vs SpeedOG",
         xaxis_title='SpeedOG (knots)',
         yaxis_title='MEShaftPowerActual (kW)',
         width=900,
