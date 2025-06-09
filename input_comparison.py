@@ -227,7 +227,7 @@ if selected_vessel_ids:
             ))
 
     fig.update_layout(
-        title="MEShaftPowerActual vs SpeedOG by Vessel with Polynomial Trends (Contrast Colors)",
+        title="MEShaftPowerActual vs SpeedOG",
         xaxis_title='SpeedOG (knots)',
         yaxis_title='MEShaftPowerActual (kW)',
         width=900,
