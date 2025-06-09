@@ -98,21 +98,70 @@ with col4:
         key="wind_max"
     )
 
+st.sidebar.subheader("🚤 SpeedOG Filter")
+min_sog = df['SpeedOG'].min()
+max_sog = df['SpeedOG'].max()
+
+col3, col4 = st.sidebar.columns(2)
+with col3:
+    sog_min = st.number_input(
+        "Min SpeedOG:",
+        min_value=float(min_sog),
+        max_value=float(max_sog),
+        value=float(min_sog),
+        step=0.5,
+        key="sog_min"
+    )
+with col4:
+    sog_max = st.number_input(
+        "Max SpeedOG:",
+        min_value=float(min_sog),
+        max_value=float(max_sog),
+        value=float(max_sog),
+        step=0.5,
+        key="sog_max"
+    )
+
+st.sidebar.subheader("💨 Beaufort Scale Filter")
+min_bf = df['BFScale'].min()
+max_bf = df['BFScale'].max()
+
+col3, col4 = st.sidebar.columns(2)
+with col3:
+    bf_min = st.number_input(
+        "Min BF Scale:",
+        min_value=float(min_bf),
+        max_value=float(max_bf),
+        value=float(min_bf),
+        step=0.5,
+        key="bf_min"
+    )
+with col4:
+    bf_max = st.number_input(
+        "Max BF Scale:",
+        min_value=float(min_bf),
+        max_value=float(max_bf),
+        value=float(max_bf),
+        step=0.5,
+        key="bf_max"
+    )
+
 # Apply all filters to the dataframe (replace the existing filtering section)
 if selected_vessel_ids:
     # Filter by vessel IDs
     filtered_df = df[df['VesselId'].isin(selected_vessel_ids)]
     
-    # Apply MeanDraft filter
+    
     filtered_df = filtered_df[
         (filtered_df['MeanDraft'] >= draft_min) & 
-        (filtered_df['MeanDraft'] <= draft_max)
-    ]
-    
-    # Apply RelativeWindDirection filter
-    filtered_df = filtered_df[
+        (filtered_df['MeanDraft'] <= draft_max) & 
         (filtered_df['RelativeWindDirection'] >= wind_min) & 
-        (filtered_df['RelativeWindDirection'] <= wind_max)
+        (filtered_df['RelativeWindDirection'] <= wind_max)& 
+        (filtered_df['SpeedOG'] >= sog_min) &
+        (filtered_df['SpeedOG'] <= sog_max)&
+        (filtered_df['BFScale'] >= bf_min) &
+        (filtered_df['BFScale'] <= bf_max)
+
     ]
 
     
