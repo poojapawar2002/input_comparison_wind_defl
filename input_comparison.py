@@ -4,6 +4,8 @@ import plotly.express as px
 import numpy as np
 import plotly.graph_objects as go
 
+
+
 # Page configuration
 st.set_page_config(page_title="Vessel MEShaftPowerActual vs SpeedOG Analysis", layout="wide")
 
@@ -173,9 +175,7 @@ if selected_vessel_ids:
     
     
 
-    import plotly.graph_objects as go
-    import numpy as np
-    import plotly.express as px
+    
 
     # One palette for scatter points, another for trendlines
     scatter_palette = px.colors.qualitative.Set3        # For points
