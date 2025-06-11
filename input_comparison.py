@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 import plotly.graph_objects as go
+import math
 
 
 
@@ -249,82 +250,158 @@ if selected_vessel_ids:
     st.plotly_chart(fig, use_container_width=True)
     
     # Create Summary Table
-    st.subheader("📊 Vessel Summary Statistics")
+    # st.subheader("📊 Vessel Summary Statistics")
     
-    summary_data = []
+    # summary_data = []
     
-    for vessel_id in selected_vessel_ids:
-        vessel_data = filtered_df[filtered_df['VesselId'] == vessel_id]
-        vessel_name = vessel_names.get(vessel_id, f"Unknown_{vessel_id}")
+    # for vessel_id in selected_vessel_ids:
+    #     vessel_data = filtered_df[filtered_df['VesselId'] == vessel_id]
+    #     vessel_name = vessel_names.get(vessel_id, f"Unknown_{vessel_id}")
         
-        if len(vessel_data) > 0:
-            # Calculate weighted averages using ME1RunningHoursMinute as weights
-            total_running_hours_min = vessel_data['ME1RunningHoursMinute'].sum()
+    #     if len(vessel_data) > 0:
+    #         # Calculate weighted averages using ME1RunningHoursMinute as weights
+    #         total_running_hours_min = vessel_data['ME1RunningHoursMinute'].sum()
             
-            if total_running_hours_min > 0:
-                # Weighted average for SpeedOG
-                weighted_avg_speed = (vessel_data['SpeedOG'] * vessel_data['ME1RunningHoursMinute']).sum() / total_running_hours_min
+    #         if total_running_hours_min > 0:
+    #             # Weighted average for SpeedOG
+    #             weighted_avg_speed = (vessel_data['SpeedOG'] * vessel_data['ME1RunningHoursMinute']).sum() / total_running_hours_min
                 
-                # Weighted average for MEShaftPowerActual
-                weighted_avg_power = (vessel_data['MEShaftPowerActual'] * vessel_data['ME1RunningHoursMinute']).sum() / total_running_hours_min
+    #             # Weighted average for MEShaftPowerActual
+    #             weighted_avg_power = (vessel_data['MEShaftPowerActual'] * vessel_data['ME1RunningHoursMinute']).sum() / total_running_hours_min
                 
-                # Calculate LCVCorrectedFOC: Total fuel consumed / total running hours * minutes per day
-                total_fuel_consumed = vessel_data['LCVCorrectedFOC'].sum()  # Total MT
-                fuel_consumption_mt_per_minute = total_fuel_consumed / total_running_hours_min
-                fuel_consumption_mt_per_day = fuel_consumption_mt_per_minute * 1440  # 1440 minutes in a day
+    #             # Calculate LCVCorrectedFOC: Total fuel consumed / total running hours * minutes per day
+    #             total_fuel_consumed = vessel_data['LCVCorrectedFOC'].sum()  # Total MT
+    #             fuel_consumption_mt_per_minute = total_fuel_consumed / total_running_hours_min
+    #             fuel_consumption_mt_per_day = fuel_consumption_mt_per_minute * 1440  # 1440 minutes in a day
                 
-                # Add to summary data
-                summary_data.append({
-                    'Vessel Name': vessel_name,
-                    # 'Data Points': len(vessel_data),
-                    'Total Running Days': f"{(total_running_hours_min/60)/24:,.2f}",
-                    'Avg SpeedOG (knots)': f"{weighted_avg_speed:.2f}",
-                    'Avg MEShaftPowerActual (kW)': f"{weighted_avg_power:.2f}",
-                    'Avg LCVCorrectedFOC (MT/day)': f"{fuel_consumption_mt_per_day:.3f}"
-                })
+    #             # Add to summary data
+    #             summary_data.append({
+    #                 'Vessel Name': vessel_name,
+    #                 # 'Data Points': len(vessel_data),
+    #                 'Total Running Days': f"{(total_running_hours_min/60)/24:,.2f}",
+    #                 'Avg SpeedOG (knots)': f"{weighted_avg_speed:.2f}",
+    #                 'Avg MEShaftPowerActual (kW)': f"{weighted_avg_power:.2f}",
+    #                 'Avg LCVCorrectedFOC (MT/day)': f"{fuel_consumption_mt_per_day:.3f}"
+    #             })
     
-    # Create and display the summary table
-    if summary_data:
-        summary_df = pd.DataFrame(summary_data)
+    # # Create and display the summary table
+    # if summary_data:
+    #     summary_df = pd.DataFrame(summary_data)
         
-        # Style the dataframe for better presentation
-        st.dataframe(
-            summary_df,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Vessel Name": st.column_config.TextColumn(
-                    "Vessel Name",
-                    width="medium"
-                ),
-                # "Data Points": st.column_config.NumberColumn(
-                #     "Data Points",
-                #     format="%d"
-                # ),
-                "Total Running Hours": st.column_config.TextColumn(
-                    "Total Running Hours",
-                    width="medium"
-                ),
-                "Avg SpeedOG (knots)": st.column_config.TextColumn(
-                    "Avg SpeedOG (knots)",
-                    width="small"
-                ),
-                "Avg MEShaftPowerActual (kW)": st.column_config.TextColumn(
-                    "Avg MEShaftPowerActual (kW)",
-                    width="medium"
-                ),
-                "LCVCorrectedFOC (MT/day)": st.column_config.TextColumn(
-                    "LCVCorrectedFOC (MT/day)",
-                    width="medium"
+    #     # Style the dataframe for better presentation
+    #     st.dataframe(
+    #         summary_df,
+    #         use_container_width=True,
+    #         hide_index=True,
+    #         column_config={
+    #             "Vessel Name": st.column_config.TextColumn(
+    #                 "Vessel Name",
+    #                 width="medium"
+    #             ),
+    #             # "Data Points": st.column_config.NumberColumn(
+    #             #     "Data Points",
+    #             #     format="%d"
+    #             # ),
+    #             "Total Running Hours": st.column_config.TextColumn(
+    #                 "Total Running Hours",
+    #                 width="medium"
+    #             ),
+    #             "Avg SpeedOG (knots)": st.column_config.TextColumn(
+    #                 "Avg SpeedOG (knots)",
+    #                 width="small"
+    #             ),
+    #             "Avg MEShaftPowerActual (kW)": st.column_config.TextColumn(
+    #                 "Avg MEShaftPowerActual (kW)",
+    #                 width="medium"
+    #             ),
+    #             "LCVCorrectedFOC (MT/day)": st.column_config.TextColumn(
+    #                 "LCVCorrectedFOC (MT/day)",
+    #                 width="medium"
+    #             )
+    #         }
+    #     )
+        # Create Summary Tables for Speed Ranges
+    st.subheader("📊 Speed Range Analysis")
+    
+    # Define speed ranges with step of 1
+    min_speed = math.floor(filtered_df['SpeedOG'].min())
+    max_speed = math.ceil(filtered_df['SpeedOG'].max())
+    speed_ranges = [(i, i+1) for i in range(min_speed, max_speed)]
+    
+    for speed_min, speed_max in speed_ranges:
+        # Filter data for this speed range
+        speed_range_df = filtered_df[
+            (filtered_df['SpeedOG'] >= speed_min) & 
+            (filtered_df['SpeedOG'] < speed_max)
+        ]
+        
+        if len(speed_range_df) > 0:  # Only show ranges that have data
+            st.write(f"\n### SpeedOG in {speed_min}-{speed_max} knots")
+            
+            summary_data = []
+            
+            for vessel_id in selected_vessel_ids:
+                vessel_data = speed_range_df[speed_range_df['VesselId'] == vessel_id]
+                vessel_name = vessel_names.get(vessel_id, f"Unknown_{vessel_id}")
+                
+                if len(vessel_data) > 0:
+                    # Calculate weighted averages using ME1RunningHoursMinute as weights
+                    total_running_hours_min = vessel_data['ME1RunningHoursMinute'].sum()
+                    
+                    if total_running_hours_min > 0:
+                        # Weighted average for MEShaftPowerActual
+                        weighted_avg_power = (vessel_data['MEShaftPowerActual'] * 
+                            vessel_data['ME1RunningHoursMinute']).sum() / total_running_hours_min
+                        
+                        # Calculate LCVCorrectedFOC per day
+                        total_fuel_consumed = vessel_data['LCVCorrectedFOC'].sum()
+                        fuel_consumption_mt_per_minute = total_fuel_consumed / total_running_hours_min
+                        fuel_consumption_mt_per_day = fuel_consumption_mt_per_minute * 1440
+                        
+                        # Add to summary data
+                        summary_data.append({
+                            'Vessel Name': vessel_name,
+                            'Total Running Days': f"{(total_running_hours_min/60)/24:,.2f}",
+                            'MEShaftPowerActual (kW)': f"{weighted_avg_power:.2f}",
+                            'LCVCorrectedFOC (MT/day)': f"{fuel_consumption_mt_per_day:.3f}"
+                        })
+            
+            # Create and display the summary table for this speed range
+            if summary_data:
+                summary_df = pd.DataFrame(summary_data)
+                
+                st.dataframe(
+                    summary_df,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Vessel Name": st.column_config.TextColumn(
+                            "Vessel Name",
+                            width="medium"
+                        ),
+                        "Total Running Days": st.column_config.TextColumn(
+                            "Total Running Days",
+                            width="medium"
+                        ),
+                        "MEShaftPowerActual (kW)": st.column_config.TextColumn(
+                            "MEShaftPowerActual (kW)",
+                            width="medium"
+                        ),
+                        "LCVCorrectedFOC (MT/day)": st.column_config.TextColumn(
+                            "LCVCorrectedFOC (MT/day)",
+                            width="medium"
+                        )
+                    }
                 )
-            }
-        )
+            else:
+                st.info(f"No data available for any vessels in the {speed_min}-{speed_max} knots range.")
         
         # Add some explanatory text
         # st.caption("📝 **Note:** SpeedOG and MEShaftPowerActual are weighted averages using ME1RunningHoursMinute as weights. LCVCorrectedFOC is calculated as total fuel consumed divided by total running hours, then converted to MT/day.")
     
     else:
-        st.warning("⚠️ No data available for the selected vessels with current filters.")
+        # st.warning("⚠️ No data available for the selected vessels with current filters.")
+        pass
 
 else:
     st.warning("⚠️ Please select at least one vessel from the sidebar to display the plot.")
