@@ -277,7 +277,7 @@ if selected_vessel_ids:
                 summary_data.append({
                     'Vessel Name': vessel_name,
                     # 'Data Points': len(vessel_data),
-                    'Total Running Hours': f"{total_running_hours_min/60:,.2f}",
+                    'Total Running Days': f"{(total_running_hours_min/60)/24:,.2f}",
                     'Avg SpeedOG (knots)': f"{weighted_avg_speed:.2f}",
                     'Avg MEShaftPowerActual (kW)': f"{weighted_avg_power:.2f}",
                     'Avg LCVCorrectedFOC (MT/day)': f"{fuel_consumption_mt_per_day:.3f}"
