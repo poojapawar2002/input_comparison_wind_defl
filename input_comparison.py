@@ -5,13 +5,8 @@ import numpy as np
 import plotly.graph_objects as go
 import math
 
-
-
 # Page configuration
-st.set_page_config(page_title="Vessel MEShaftPowerActual vs SpeedOG Analysis", layout="wide")
-
-# Title
-st.title("🚢 MEShaftPowerActual vs SpeedOG Analysis")
+st.set_page_config(page_title="Vessel MEShaftPowerActual vs Speed Analysis", layout="wide")
 
 # Vessel ID to Name mapping
 vessel_names = {
@@ -26,7 +21,6 @@ vessel_names = {
     1018: "CARINA*"
 }
 
-
 # Load your dataframe
 df = pd.read_csv("combined_output_merged_input_nanremoved.csv")
 
@@ -36,6 +30,21 @@ df["LCVCorrectedFOC"] = df["ISOCorrectedFOC"] +df["MEFOCIdealPD"] - df["MEFOCIde
 
 # Sidebar for filters
 st.sidebar.header("🔧 Filters")
+
+# Speed Type Selection - Add this at the top of sidebar
+st.sidebar.subheader("🚤 Speed Type Selection")
+speed_type = st.sidebar.radio(
+    "Select Speed Type:",
+    options=["SpeedOG", "SpeedTW"],
+    index=0,  # Default to SpeedOG (index 0)
+    help="Choose between Speed Over Ground (SpeedOG) or Speed Through Water (SpeedTW)"
+)
+
+# Update title based on selection
+st.title(f"🚢 MEShaftPowerActual vs {speed_type} Analysis")
+
+# Get the selected speed column
+speed_column = speed_type
 
 # Get unique vessel IDs and create name options
 unique_vessel_ids = sorted(df['VesselId'].unique())
@@ -105,28 +114,29 @@ with col4:
         key="wind_max"
     )
 
-st.sidebar.subheader("🚤 SpeedOG Filter")
-min_sog = df['SpeedOG'].min()
-max_sog = df['SpeedOG'].max()
+# Dynamic Speed Filter based on selected speed type
+st.sidebar.subheader(f"🚤 {speed_type} Filter")
+min_speed = df[speed_column].min()
+max_speed = df[speed_column].max()
 
 col3, col4 = st.sidebar.columns(2)
 with col3:
-    sog_min = st.number_input(
-        "Min SpeedOG:",
-        min_value=float(min_sog),
-        max_value=float(max_sog),
-        value=float(min_sog),
+    speed_min = st.number_input(
+        f"Min {speed_type}:",
+        min_value=float(min_speed),
+        max_value=float(max_speed),
+        value=float(min_speed),
         step=0.5,
-        key="sog_min"
+        key=f"{speed_type.lower()}_min"
     )
 with col4:
-    sog_max = st.number_input(
-        "Max SpeedOG:",
-        min_value=float(min_sog),
-        max_value=float(max_sog),
-        value=float(max_sog),
+    speed_max = st.number_input(
+        f"Max {speed_type}:",
+        min_value=float(min_speed),
+        max_value=float(max_speed),
+        value=float(max_speed),
         step=0.5,
-        key="sog_max"
+        key=f"{speed_type.lower()}_max"
     )
 
 st.sidebar.subheader("💨 Beaufort Scale Filter")
@@ -153,87 +163,118 @@ with col4:
         key="bf_max"
     )
 
-# Apply all filters to the dataframe (replace the existing filtering section)
+# Apply all filters to the dataframe
 if selected_vessel_ids:
     # Filter by vessel IDs
     filtered_df = df[df['VesselId'].isin(selected_vessel_ids)]
-    
     
     filtered_df = filtered_df[
         (filtered_df['MeanDraft'] >= draft_min) & 
         (filtered_df['MeanDraft'] <= draft_max) & 
         (filtered_df['RelativeWindDirection'] >= wind_min) & 
         (filtered_df['RelativeWindDirection'] <= wind_max)& 
-        (filtered_df['SpeedOG'] >= sog_min) &
-        (filtered_df['SpeedOG'] <= sog_max)&
+        (filtered_df[speed_column] >= speed_min) &
+        (filtered_df[speed_column] <= speed_max)&
         (filtered_df['BFScale'] >= bf_min) &
         (filtered_df['BFScale'] <= bf_max)
-
     ]
-
     
     # Add vessel names to the dataframe for display
     filtered_df = filtered_df.copy()
     filtered_df['vessel_name'] = filtered_df['VesselId'].map(vessel_names)
-    
 
-    
-    
+    # OPTIMIZED COLOR PALETTE FOR 8 VESSELS (16 colors) + 2 EXTRA
+    # These colors are hand-picked and tested for maximum visual distinction
 
-    
+    # Scatter point colors - High contrast, easily distinguishable
+    scatter_colors = [
+        "#E85252",  # Bright Red
+        "#6868CF",  # Bright Blue  
+        "#A8ECA8",  # Bright Green
+        "#F8B15F",  # Orange
+        "#D3ACEE",  # Purple
+        "#84EDED",  # Cyan
+        "#F392C6",  # Hot Pink
+        "#E6E97B",  # Lime Green
+    ]
 
-    # One palette for scatter points, another for trendlines
-    scatter_palette = px.colors.qualitative.Set3        # For points
-    trendline_palette = px.colors.qualitative.Plotly    # For lines (high contrast vs Set3)
+    # Trendline colors - Darker, contrasting versions with different hues
+    trendline_colors = [
+        "#E70E0E",  # Bright Red
+        "#2B2BD0",  # Bright Blue  
+        "#6BEC6B",  # Bright Green
+        "#FA8C0F",  # Orange
+        "#BA71EF",  # Purple
+        '#00FFFF',  # Cyan
+        "#F8349C",  # Hot Pink
+        "#ECF406",  # Lime Green
+    ]
+
+    # Verify we have enough colors
+    n_vessels = len(selected_vessel_ids)
+    if n_vessels > len(scatter_colors):
+        st.error(f"Not enough predefined colors! Need {n_vessels}, have {len(scatter_colors)}")
+        st.stop()
 
     fig = go.Figure()
 
+    # 1. Add scatter points with predefined distinct colors
     for i, vessel_id in enumerate(selected_vessel_ids):
         vessel_data = filtered_df[filtered_df['VesselId'] == vessel_id]
         vessel_name = vessel_names.get(vessel_id, f"Unknown_{vessel_id}")
-        scatter_color = scatter_palette[i % len(scatter_palette)]
+        
         fig.add_trace(go.Scatter(
-            x=vessel_data['SpeedOG'],
+            x=vessel_data[speed_column],
             y=vessel_data['MEShaftPowerActual'],
             mode='markers',
             name=vessel_name,
             legendgroup=vessel_name,
-            marker=dict(color=scatter_color, size=7, opacity=0.60),
+            marker=dict(
+                color=scatter_colors[i], 
+                size=8,  # Slightly larger for better visibility
+                opacity=0.70,  # Increased opacity for better distinction
+                line=dict(width=1.5, color='white')  # Thicker white border
+            ),
             showlegend=True,
-            customdata=np.stack((vessel_data['SpeedOG'], vessel_data['MEShaftPowerActual'], vessel_data['VesselId']), axis=-1),
+            customdata=np.stack((vessel_data[speed_column], vessel_data['MEShaftPowerActual'], vessel_data['VesselId']), axis=-1),
             hovertemplate=(
-                f"Vessel: {vessel_name}<br>"
-                # "Vessel ID: %{customdata[2]}<br>"
-                "SpeedOG: %{customdata[0]:.2f} knots<br>"
+                f"<b>Vessel: {vessel_name}</b><br>"
+                f"{speed_type}: %{{customdata[0]:.2f}} knots<br>"
                 "MEShaftPowerActual: %{customdata[1]:.2f} kW<br>"
                 "<extra></extra>"
             ),
         ))
 
-    # 2. Trendlines (contrasting color, visually distinct)
+    # 2. Add trendlines with contrasting predefined colors
     for i, vessel_id in enumerate(selected_vessel_ids):
         vessel_data = filtered_df[filtered_df['VesselId'] == vessel_id]
         vessel_name = vessel_names.get(vessel_id, f"Unknown_{vessel_id}")
-        trend_color = trendline_palette[i % len(trendline_palette)]
+        
         if len(vessel_data) > 3:
-            vessel_data_sorted = vessel_data.sort_values('SpeedOG')
-            coeffs = np.polyfit(vessel_data_sorted['SpeedOG'], vessel_data_sorted['MEShaftPowerActual'], 3)
+            vessel_data_sorted = vessel_data.sort_values(speed_column)
+            coeffs = np.polyfit(vessel_data_sorted[speed_column], vessel_data_sorted['MEShaftPowerActual'], 3)
             poly_func = np.poly1d(coeffs)
-            x_smooth = np.linspace(vessel_data_sorted['SpeedOG'].min(), vessel_data_sorted['SpeedOG'].max(), 100)
+            x_smooth = np.linspace(vessel_data_sorted[speed_column].min(), vessel_data_sorted[speed_column].max(), 100)
             y_smooth = poly_func(x_smooth)
+            
             fig.add_trace(go.Scatter(
                 x=x_smooth,
                 y=y_smooth,
                 mode='lines',
                 name=f'{vessel_name} (Trend)',
-                line=dict(color=trend_color, width=4, dash='solid'),
+                line=dict(
+                    color=trendline_colors[i], 
+                    width=4,  # Thick lines for better visibility
+                    dash='solid'
+                ),
                 legendgroup=vessel_name,
-                showlegend=True
+                showlegend=True,
+                hoverinfo='skip'
             ))
 
+    # Enhanced layout for better color distinction
     fig.update_layout(
-        # title="MEShaftPowerActual vs SpeedOG",
-        xaxis_title='SpeedOG (knots)',
+        xaxis_title=f'{speed_type} (knots)',
         yaxis_title='MEShaftPowerActual (kW)',
         width=900,
         height=600,
@@ -242,101 +283,53 @@ if selected_vessel_ids:
             yanchor="top",
             y=1,
             xanchor="left",
-            x=1.02
+            x=1.02,
+            bgcolor="rgba(255, 255, 255, 0.9)",  # Semi-transparent white background
+            bordercolor="gray",
+            borderwidth=1
         ),
-        margin=dict(r=150)
+        margin=dict(r=180),  # More space for legend
+        plot_bgcolor='white',
+        paper_bgcolor='white'
+    )
+
+    # Subtle grid for better readability without interfering with colors
+    fig.update_xaxes(
+        gridcolor='rgba(128, 128, 128, 0.2)',
+        gridwidth=1,
+        griddash='dot',
+        zeroline=True,
+        zerolinecolor='rgba(128, 128, 128, 0.4)',
+        zerolinewidth=1
+    )
+    fig.update_yaxes(
+        gridcolor='rgba(128, 128, 128, 0.2)',
+        gridwidth=1,
+        griddash='dot',
+        zeroline=True,
+        zerolinecolor='rgba(128, 128, 128, 0.4)',
+        zerolinewidth=1
     )
 
     st.plotly_chart(fig, use_container_width=True)
-    
-    # Create Summary Table
-    # st.subheader("📊 Vessel Summary Statistics")
-    
-    # summary_data = []
-    
-    # for vessel_id in selected_vessel_ids:
-    #     vessel_data = filtered_df[filtered_df['VesselId'] == vessel_id]
-    #     vessel_name = vessel_names.get(vessel_id, f"Unknown_{vessel_id}")
-        
-    #     if len(vessel_data) > 0:
-    #         # Calculate weighted averages using ME1RunningHoursMinute as weights
-    #         total_running_hours_min = vessel_data['ME1RunningHoursMinute'].sum()
-            
-    #         if total_running_hours_min > 0:
-    #             # Weighted average for SpeedOG
-    #             weighted_avg_speed = (vessel_data['SpeedOG'] * vessel_data['ME1RunningHoursMinute']).sum() / total_running_hours_min
-                
-    #             # Weighted average for MEShaftPowerActual
-    #             weighted_avg_power = (vessel_data['MEShaftPowerActual'] * vessel_data['ME1RunningHoursMinute']).sum() / total_running_hours_min
-                
-    #             # Calculate LCVCorrectedFOC: Total fuel consumed / total running hours * minutes per day
-    #             total_fuel_consumed = vessel_data['LCVCorrectedFOC'].sum()  # Total MT
-    #             fuel_consumption_mt_per_minute = total_fuel_consumed / total_running_hours_min
-    #             fuel_consumption_mt_per_day = fuel_consumption_mt_per_minute * 1440  # 1440 minutes in a day
-                
-    #             # Add to summary data
-    #             summary_data.append({
-    #                 'Vessel Name': vessel_name,
-    #                 # 'Data Points': len(vessel_data),
-    #                 'Total Running Days': f"{(total_running_hours_min/60)/24:,.2f}",
-    #                 'Avg SpeedOG (knots)': f"{weighted_avg_speed:.2f}",
-    #                 'Avg MEShaftPowerActual (kW)': f"{weighted_avg_power:.2f}",
-    #                 'Avg LCVCorrectedFOC (MT/day)': f"{fuel_consumption_mt_per_day:.3f}"
-    #             })
-    
-    # # Create and display the summary table
-    # if summary_data:
-    #     summary_df = pd.DataFrame(summary_data)
-        
-    #     # Style the dataframe for better presentation
-    #     st.dataframe(
-    #         summary_df,
-    #         use_container_width=True,
-    #         hide_index=True,
-    #         column_config={
-    #             "Vessel Name": st.column_config.TextColumn(
-    #                 "Vessel Name",
-    #                 width="medium"
-    #             ),
-    #             # "Data Points": st.column_config.NumberColumn(
-    #             #     "Data Points",
-    #             #     format="%d"
-    #             # ),
-    #             "Total Running Hours": st.column_config.TextColumn(
-    #                 "Total Running Hours",
-    #                 width="medium"
-    #             ),
-    #             "Avg SpeedOG (knots)": st.column_config.TextColumn(
-    #                 "Avg SpeedOG (knots)",
-    #                 width="small"
-    #             ),
-    #             "Avg MEShaftPowerActual (kW)": st.column_config.TextColumn(
-    #                 "Avg MEShaftPowerActual (kW)",
-    #                 width="medium"
-    #             ),
-    #             "LCVCorrectedFOC (MT/day)": st.column_config.TextColumn(
-    #                 "LCVCorrectedFOC (MT/day)",
-    #                 width="medium"
-    #             )
-    #         }
-    #     )
-        # Create Summary Tables for Speed Ranges
-    st.subheader("📊 Speed Range Analysis")
+
+    # Create Summary Tables for Speed Ranges
+    st.subheader(f"📊 {speed_type} Range Analysis")
     
     # Define speed ranges with step of 1
-    min_speed = math.floor(filtered_df['SpeedOG'].min())
-    max_speed = math.ceil(filtered_df['SpeedOG'].max())
-    speed_ranges = [(i, i+1) for i in range(min_speed, max_speed)]
+    min_speed_range = math.floor(filtered_df[speed_column].min())
+    max_speed_range = math.ceil(filtered_df[speed_column].max())
+    speed_ranges = [(i, i+1) for i in range(min_speed_range, max_speed_range)]
     
-    for speed_min, speed_max in speed_ranges:
+    for speed_min_range, speed_max_range in speed_ranges:
         # Filter data for this speed range
         speed_range_df = filtered_df[
-            (filtered_df['SpeedOG'] >= speed_min) & 
-            (filtered_df['SpeedOG'] < speed_max)
+            (filtered_df[speed_column] >= speed_min_range) & 
+            (filtered_df[speed_column] < speed_max_range)
         ]
         
         if len(speed_range_df) > 0:  # Only show ranges that have data
-            st.write(f"\n### SpeedOG in {speed_min}-{speed_max} knots")
+            st.write(f"\n### {speed_type} in {speed_min_range}-{speed_max_range} knots")
             
             summary_data = []
             
@@ -375,8 +368,8 @@ if selected_vessel_ids:
                     use_container_width=True,
                     hide_index=True,
                     column_config={
-                        "Vessel Name": st.column_config.TextColumn(
-                            "Vessel Name",
+                        "Vessel": st.column_config.TextColumn(
+                            "Vessel",
                             width="medium"
                         ),
                         "Total Running Days": st.column_config.TextColumn(
@@ -394,14 +387,7 @@ if selected_vessel_ids:
                     }
                 )
             else:
-                st.info(f"No data available for any vessels in the {speed_min}-{speed_max} knots range.")
-        
-        # Add some explanatory text
-        # st.caption("📝 **Note:** SpeedOG and MEShaftPowerActual are weighted averages using ME1RunningHoursMinute as weights. LCVCorrectedFOC is calculated as total fuel consumed divided by total running hours, then converted to MT/day.")
-    
-    else:
-        # st.warning("⚠️ No data available for the selected vessels with current filters.")
-        pass
+                st.info(f"No data available for any vessels in the {speed_min_range}-{speed_max_range} knots range.")
 
 else:
     st.warning("⚠️ Please select at least one vessel from the sidebar to display the plot.")
