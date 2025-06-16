@@ -1,4 +1,5 @@
 import streamlit as st
+from pymongo import MongoClient
 import pandas as pd
 import plotly.express as px
 import numpy as np
@@ -55,13 +56,24 @@ def generate_colors(n_colors):
 
 # Load your dataframe
 try:
-    df = pd.read_csv("combined_output_merged_input_nanremoved.csv")
+    mongo_uri = st.secrets["mongo"]["uri"]
+    client = MongoClient(mongo_uri)
+    db = client["seaker_data"]
+    collection = db["combined_output_merged_input_nanremoved"]
+
+    data = list(collection.find())
+    df = pd.DataFrame(data)
+    df.drop(columns=['_id'], inplace=True)
+
     df = df[(df["IsSpeedDropValid"]==1) & (df["IsDeltaPDOnSpeedValid"]==1)]
     df["LCVCorrectedFOC"] = df["ISOCorrectedFOC"] +df["MEFOCIdealPD"] - df["MEFOCIdealPDCor"]
     df = df[["VesselId", "MEShaftPowerActual", "ME1RunningHoursMinute", "MeanDraft", "RelativeWindDirection", "SpeedOG", "SpeedTW", "BFScale", "LCVCorrectedFOC"]].copy()
     
     # Load additional data
-    df_cassiopeia = pd.read_csv("cassiopeia_autolog_10min_rel_wind.csv")
+    casso_collection = db["cassiopeia_autolog_10min_rel_wind"]
+    casso_data = list(casso_collection.find())
+    df_cassiopeia = pd.DataFrame(casso_data)
+    df_cassiopeia.drop(columns=['_id'], inplace=True)
     df_cassiopeia = df_cassiopeia[["VesselId", "MEShaftPowerActual", "ME1RunningHoursMinute", "MeanDraft", "RelativeWindDirection", "SpeedOG", "SpeedTW", "BFScale", "LCVCorrectedFOC"]].copy()
     df = pd.concat([df, df_cassiopeia], ignore_index=True)
     
