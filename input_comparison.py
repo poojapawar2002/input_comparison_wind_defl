@@ -75,7 +75,7 @@ try:
     # casso_data = list(casso_collection.find())
     # df_cassiopeia = pd.DataFrame(casso_data)
     # df_cassiopeia.drop(columns=['_id'], inplace=True)
-    df_cassiopeia = read_csv("cassiopeia_autolog_10min_rel_wind.csv")
+    df_cassiopeia = pd.read_csv("cassiopeia_autolog_10min_rel_wind.csv")
     df_cassiopeia = df_cassiopeia[["VesselId", "MEShaftPowerActual", "ME1RunningHoursMinute", "MeanDraft", "RelativeWindDirection", "SpeedOG", "SpeedTW", "BFScale", "LCVCorrectedFOC"]].copy()
     df = pd.concat([df, df_cassiopeia], ignore_index=True)
     
