@@ -64,7 +64,7 @@ try:
     # data = list(collection.find())
     # df = pd.DataFrame(data)
     # df.drop(columns=['_id'], inplace=True)
-    df = read_csv("combined_output_merged_input_nanremoved.csv")
+    df = pd.read_csv("combined_output_merged_input_nanremoved.csv")
 
     df = df[(df["IsSpeedDropValid"]==1) & (df["IsDeltaPDOnSpeedValid"]==1)]
     df["LCVCorrectedFOC"] = df["ISOCorrectedFOC"] +df["MEFOCIdealPD"] - df["MEFOCIdealPDCor"]
