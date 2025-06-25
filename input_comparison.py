@@ -56,14 +56,20 @@ def generate_colors(n_colors):
 
 # Load your dataframe
 try:
-    mongo_uri = st.secrets["mongo"]["uri"]
-    client = MongoClient(mongo_uri)
-    db = client["seaker_data"]
-    collection = db["combined_output_merged_input_nanremoved"]
-
-    data = list(collection.find())
-    df = pd.DataFrame(data)
-    df.drop(columns=['_id'], inplace=True)
+    @st.cache_data(ttl=600)  # cache for 10 minutes
+    def load_data(collection_name):
+        # connect and query once
+        mongo_uri = st.secrets["mongo"]["uri"]
+        client = MongoClient(mongo_uri)
+        db = client["seaker_data"]
+        collection = db[collection_name]
+    
+        data = list(collection.find())
+        df = pd.DataFrame(data)
+        df.drop(columns=['_id'], inplace=True)
+        return df
+    
+    df = load_data("combined_output_merged_input_nanremoved")
     # df = pd.read_csv("combined_output_merged_input_nanremoved.csv")
 
     df = df[(df["IsSpeedDropValid"]==1) & (df["IsDeltaPDOnSpeedValid"]==1)]
@@ -73,10 +79,7 @@ try:
     # st.write("Data loaded successfully! Displaying the first few rows:")
 
     # Load additional data
-    casso_collection = db["cassiopeia_autolog_10min_rel_wind"]
-    casso_data = list(casso_collection.find())
-    df_cassiopeia = pd.DataFrame(casso_data)
-    df_cassiopeia.drop(columns=['_id'], inplace=True)
+    df_cassiopeia = load_data("cassiopeia_autolog_10min_rel_wind")
     # df_cassiopeia = pd.read_csv("cassiopeia_autolog_10min_rel_wind.csv")
     df_cassiopeia = df_cassiopeia[["VesselId", "MEShaftPowerActual", "ME1RunningHoursMinute", "MeanDraft", "RelativeWindDirection", "SpeedOG", "SpeedTW", "BFScale", "LCVCorrectedFOC"]].copy()
     # st.write("Cassiopeia data loaded successfully! Displaying the first few rows:")
